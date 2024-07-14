@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AmzScrapy - Fetcher</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* Additional CSS to style the select box */
+      select {
+        padding-right: 3rem; /* Adjust for the flag space */
+      }
+      /* Custom appearance for select options */
+      option::before {
+        content: attr(data-flag);
+        background-image: url(attr(data-flag));
+        background-size: contain;
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        margin-right: 8px;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-100 flex flex-col items-center justify-start min-h-screen pt-10"
+  >
+    <div class="bg-white p-6 rounded-lg shadow-lg w-96 text-center mb-6">
+      <h1 class="text-2xl font-bold mb-4">AmzScrapy</h1>
+      <form method="post" enctype="multipart/form-data" id="asinForm">
+        <!-- <label for="marketplace" class="block text-gray-700 font-bold mb-2"
+          >Select Marketplace:</label
+        > -->
+        <!-- <div class="relative w-64 mx-auto mt-10">
+          <select
+            id="marketplace"
+            name="marketplace"
+            class="border border-gray-300 rounded p-2 mb-4 w-full appearance-none pr-10"
+            onchange="updateFlag()"
+          >
+            {% for marketplace in marketplaces %}
+            <option
+              value="{{ marketplace.url }}"
+              data-flag="{{ marketplace.flag_url }}"
+            >
+              {{ marketplace.url }}
+            </option>
+            {% endfor %}
+          </select>
+          <div
+            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+          >
+            <img
+              id="flag"
+              src="{{ marketplaces[0].flag_url }}"
+              alt="Flag"
+              class="w-6 h-6"
+            />
+          </div>
+        </div> -->
+        <label for="file" class="block text-gray-700 font-bold mb-2"
+          >Upload CSV of ASINs:</label
+        >
+        <input
+          type="file"
+          id="file"
+          name="file"
+          accept=".csv"
+          required
+          class="border border-gray-300 rounded p-2 mb-4 w-full"
+        />
+        <button
+          type="submit"
+          id="fetchButton"
+          class="bg-blue-500 text-white font-bold py-2 px-4 rounded w-full hover:bg-blue-700 transition duration-200"
+        >
+          Fetch SKU
+        </button>
+      </form>
+      <button
+        id="processingButton"
+        class="hidden bg-indigo-500 text-white font-bold py-2 px-4 rounded w-full"
+        disabled
+      >
+        <svg class="animate-spin h-5 w-5 mr-3 inline-block" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8h-8z"
+          ></path>
+        </svg>
+        Processing...
+      </button>
+    </div>
+
+    <div id="resultContainer" class="hidden w-full h-full bg-white p-4">
+      <div
+        class="border border-gray-300 rounded-lg shadow-md p-4 mx-auto container w-full md:w-4/5 xl:w-3/5"
+      >
+        <div class="relative mb-4">
+          <button
+            id="downloadButton"
+            class="flex items-center justify-center bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-green-700 transition duration-200"
+            onclick="downloadFile()"
+          >
+            <svg
+              id="downloadIcon"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 384 512"
+              class="h-5 w-5"
+            >
+              <path
+                d="M64 0C28.7 0 0 28.7 0 64V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zM256 0V128H384L256 0zM216 232V334.1l31-31c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-72 72c-9.4 9.4-24.6 9.4-33.9 0l-72-72c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l31 31V232c0-13.3 10.7-24 24-24s24 10.7 24 24z"
+              />
+            </svg>
+            <p class="ml-2">Download CSV</p>
+          </button>
+        </div>
+        <h2 class="text-lg font-bold mb-2 mt-12">Scraped Results</h2>
+        <div class="overflow-x-auto">
+          <table
+            class="min-w-full bg-white border border-gray-300 border-opacity-50 rounded-lg"
+          >
+            <thead>
+              <tr>
+                <th class="py-2 px-4 border-b border-gray-300">ASIN</th>
+                <th class="py-2 px-4 border-b border-gray-300">Title</th>
+                <th class="py-2 px-4 border-b border-gray-300">Price</th>
+                <th class="py-2 px-4 border-b border-gray-300">Brand</th>
+              </tr>
+            </thead>
+            <tbody id="resultsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("asinForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent default form submission
+          const fetchButton = document.getElementById("fetchButton");
+          const processingButton = document.getElementById("processingButton");
+          const resultContainer = document.getElementById("resultContainer");
+          const resultsTableBody = document.getElementById("resultsTableBody");
+
+          // Hide fetch button and show processing button
+          fetchButton.classList.add("hidden");
+          processingButton.classList.remove("hidden");
+
+          const formData = new FormData(this);
+
+          // Make AJAX request to fetch data
+          fetch("/", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              // Hide processing button and show result container
+              processingButton.classList.add("hidden");
+              resultContainer.classList.remove("hidden");
+
+              // Populate the results table
+              resultsTableBody.innerHTML = "";
+              data.forEach((item) => {
+                const row = `
+                    <tr>
+                      <td class="py-2 px-4 border-b">${item.ASIN}</td>
+                      <td class="py-2 px-4 border-b">${item.Title}</td>
+                      <td class="py-2 px-4 border-b">${item.Price}</td>
+                      <td class="py-2 px-4 border-b">${item.Brand}</td>
+                    </tr>
+                  `;
+                resultsTableBody.insertAdjacentHTML("beforeend", row);
+              });
+
+              // Set download button URL
+              document.getElementById("downloadButton").onclick = function () {
+                window.location.href =
+                  "{{ url_for('download_file', filename='output.csv') }}";
+              };
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              processingButton.classList.add("hidden");
+              fetchButton.classList.remove("hidden");
+            });
+          document
+            .getElementById("marketplace")
+            .addEventListener("change", function () {
+              const selectedOption = this.options[this.selectedIndex];
+              const flagUrl = selectedOption.getAttribute("data-flag");
+              document.querySelector(".absolute img").src = flagUrl;
+            });
+          function updateFlag() {
+            const select = document.getElementById("marketplace");
+            const flag = document.getElementById("flag");
+            const selectedOption = select.options[select.selectedIndex];
+            flag.src = selectedOption.getAttribute("data-flag");
+          }
+
+          // Initialize the flag image on page load
+          document.addEventListener("DOMContentLoaded", function () {
+            updateFlag();
+          });
+        });
+    </script>
+  </body>
+</html>

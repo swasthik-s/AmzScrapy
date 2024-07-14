@@ -1,0 +1,7 @@
+marketplaces:
+  - name: "Amazon US"
+    url: "https://www.amazon.com"
+    flag_url: "https://flagcdn.com/us.svg"
+  - name: "Amazon IN"
+    url: "https://www.amazon.in"
+    flag_url: "https://flagcdn.com/in.svg"

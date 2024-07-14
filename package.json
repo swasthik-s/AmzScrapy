@@ -1,0 +1,26 @@
+{
+  "name": "flask_ts_tailwind_app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "postcss static/tailwind.css -o static/output.css",
+    "build:ts": "tsc --outDir static",
+    "watch:css": "postcss static/tailwind.css -o static/output.css --watch",
+    "watch:ts": "tsc --outDir static --watch",
+    "dev": "concurrently \"npm run watch:css\" \"npm run watch:ts\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "autoprefixer": "^10.4.19",
+    "choices.js": "^10.2.0",
+    "postcss-cli": "^11.0.0",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.3"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
