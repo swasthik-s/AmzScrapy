@@ -1,5 +1,5 @@
 Flask~=3.0.3
-lxml~=5.2.2p
+lxml~=5.2.2
 pandas~=2.2.2
 requests~=2.32.3
 bs4~=0.0.2
