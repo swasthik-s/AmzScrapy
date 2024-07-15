@@ -10,6 +10,7 @@ from .config import load_marketplaces
 results = []
 output_file_path = ""
 
+
 def index():
     global results, output_file_path
     marketplaces = load_marketplaces()  # Load marketplaces from config

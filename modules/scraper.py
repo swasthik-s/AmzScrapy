@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
+
 def get_product_details_by_asin(asin):
     base_url = 'https://www.amazon.com/dp/'
     url = f'{base_url}{asin}'
